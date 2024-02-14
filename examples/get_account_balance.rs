@@ -22,6 +22,8 @@ use hedera::{AccountBalanceQuery, AccountId, Client, NodeAddressBookQuery};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     // let client = Client::for_mainnet();
     let client = Client::for_testnet();
     dbg!(NodeAddressBookQuery::new()
