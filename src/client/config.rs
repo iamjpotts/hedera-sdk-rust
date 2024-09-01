@@ -20,6 +20,9 @@
 
 use std::collections::HashMap;
 use std::str::FromStr;
+use std::time::Duration;
+
+use tonic::transport::Endpoint;
 
 use crate::signer::AnySigner;
 use crate::{
@@ -96,4 +99,56 @@ pub(super) struct ClientConfig {
     pub(super) operator: Option<super::Operator>,
     pub(super) network: Either<HashMap<String, AccountId>, NetworkName>,
     pub(super) mirror_network: Option<Either<Vec<String>, NetworkName>>,
+}
+
+/// gRPC channel connection configuration
+pub struct EndpointConfig {
+    pub connect_timeout: Option<Duration>,
+    pub http2_keep_alive_interval: Option<Duration>,
+    pub http2_keep_alive_timeout: Option<Duration>,
+    pub http2_keep_alive_while_idle: Option<bool>,
+    pub tcp_keepalive: Option<Duration>,
+}
+
+impl EndpointConfig {
+    /// Provide a default configuration
+    pub fn new() -> Self {
+        Self {
+            connect_timeout: Some(Duration::from_secs(10)),
+            http2_keep_alive_interval: None,
+            http2_keep_alive_timeout: Some(Duration::from_secs(10)),
+            http2_keep_alive_while_idle: Some(true),
+            tcp_keepalive: Some(Duration::from_secs(10)),
+        }
+    }
+}
+
+impl EndpointConfig {
+    pub(crate) fn apply(&self, endpoint: Endpoint) -> Endpoint {
+        let endpoint = if let Some(value) = self.connect_timeout {
+            endpoint.connect_timeout(value)
+        } else {
+            endpoint
+        };
+
+        let endpoint = if let Some(value) = self.http2_keep_alive_interval {
+            endpoint.http2_keep_alive_interval(value)
+        } else {
+            endpoint
+        };
+
+        let endpoint = if let Some(value) = self.http2_keep_alive_timeout {
+            endpoint.keep_alive_timeout(value)
+        } else {
+            endpoint
+        };
+
+        let endpoint = if let Some(value) = self.http2_keep_alive_while_idle {
+            endpoint.keep_alive_while_idle(value)
+        } else {
+            endpoint
+        };
+
+        endpoint.tcp_keepalive(self.tcp_keepalive)
+    }
 }
